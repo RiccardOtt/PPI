@@ -7,6 +7,8 @@ import matplotlib.ticker as mtick
 import numpy as np; np.random.seed(0)
 import seaborn as sns; sns.set_theme()
 import pandas as pd
+from matplotlib.pyplot import figure
+
 
 
 def heatmap(statmatrix):
@@ -35,50 +37,50 @@ def histogram(interactres,surfres):
 		lines = lines.rstrip()
 		if lines in res:
 			dsurf[lines] += 1
-	for k,v in dsurf.items():
-		dsurf[k] = (v/surfr)*100
 
 
 	dinter = { i : 0 for i in res}
 	for lines in interactres:
-		interesid += 1
+		interesid += 2
 		lines = lines.rstrip().split(' ')
 		r1 = lines[1]
-		r2 = lines[7]
+		r2 = lines[10]
 		if r1 in res:
-			if r2 in res:
-				dinter[r1] += 1
-				dinter[r2] += 1
-	for k,v in dinter.items():
-		dinter[k] = (v/interesid)*100
+			dinter[r1] +=1
+		if r2 in res:
+			dinter[r2] += 1
 
 
 	for k,v in dsurf.items():
-		listsurf.append(v)
+		listsurf.append((v/surfr)*100)
+	for K,V in dinter.items():
+		listint.append((V/interesid)*100)
 
-	for k,v in dinter.items():
-		listint.append(v)
 
+#	print(dinter)
+#	print(dsurf)
+#	print(sum(listsurf))
+#	print(sum(listint))
 
-	width = 0.17
+	width = 0.25
 	x = np.arange(len(res))
 	x1 = [a + width for a in x]
 	x2 = [a + width for a in x1]
-#	x3 = [a + width for a in x2]
+	x3 = [a + width for a in x2]
 
+	figure(figsize=(20, 6), dpi=100)
 #	plt.bar(x, H_norm, width, color='yellow', label='H')
 	plt.bar(x1, listsurf, width, color='blue', label='surface residues')
 	plt.bar(x2, listint, width, color='red', label='interacting residues')
 #	plt.bar(x3, overall_norm, width, color='lightsteelblue', label='Overall')
 
-	plt.ylabel('Composition(%)')
+	plt.ylabel('Composition')
 	plt.xlabel('Aminoacid')
+	plt.xticks(x,res) #,rotation='vertical')
 	plt.yticks()
-#	plt.gca().yaxis.set_major_formatter(PercentFormatter(1))
-	plt.xticks(x,res,rotation='vertical')
 	plt.legend(loc="upper right")
 #	plt.show()
-
+	plt.savefig('histo.png')
 
 
 
@@ -88,5 +90,5 @@ if __name__ == '__main__':
 	intres = sys.argv[2]
 	surfaceres = sys.argv[3]
 	with open(matrix) as m, open(intres) as interacres, open(surfaceres) as surfres:
-		heatmap(m)
-#		histogram(interacres,surfres)
+#		heatmap(m)
+		histogram(interacres,surfres)

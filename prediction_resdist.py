@@ -9,6 +9,40 @@ warnings.simplefilter('ignore', BiopythonWarning)
 
 
 
+def mut_converter(skempi_line):
+	new_list = []
+	final_list = []
+	real_final_list = []
+	convertion = ''
+
+	d = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+     'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
+     'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
+     'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+
+	for k,v in d.items():
+		mutation = list(skempi_line[2])
+		if mutation[1] == v:
+			mutation[1] = k
+			new_list.append(mutation)
+
+	for i in new_list:
+		for k,v in d.items():
+			i = list(i)
+			if i[-1] == v:
+				i[-1] = k
+				final_list.append(i)
+
+	for a in final_list:
+		real_final_list.append(skempi_line[0]+' '+a[1]+' '+''.join(a[3:-1])+' '+a[-1])
+
+	for f in real_final_list:
+		convertion += f
+
+	return convertion
+
+
+
 
 def interface(id):
 
@@ -22,34 +56,25 @@ def interface(id):
 	model = structure[0]
 	for chain1 in model:
 		for chain2 in model:
-			for residue1 in chain1:
-				tags1 = residue1.id
-#				print(residue1)
-				for residue2 in chain2:
-					tags2 = residue2.id
-					if chain1 != chain2:
+			if chain1 != chain2:
+				for residue1 in chain1:
+					for residue2 in chain2:
+						tags1 = residue1.id
+						tags2 = residue2.id
 						if tags1[0] != " " or tags2[0] != " ":
 							pass
 						else:
-#						try:
-							atoms1 = residue1.get_atoms()
-							atoms2 = residue2.get_atoms()
-							for atom1 in atoms1:
-								for atom2 in atoms2:
-									distance = atom1 -atom2
-#									print(distance)
-#							distance = residue1['CA'] - residue2['CA']
-#									except KeyError:
-         	       				## no CA atom, e.g. for H_NAG
-#										continue
-									if distance < int(8):
-#										print(residue1,residue2)
-										contact = (str(residue1)+' '+str(chain1)+' '+str(residue2)+' '+str(chain2))
-										if contact not in contacts:
-											contacts.append(str(residue1)+' '+str(chain1)+' '+str(residue2)+' '+str(chain2))
+							try:
+								distance = residue1['CA'] - residue2['CA']
+							except KeyError: ## no CA atom, e.g. for H_NAG
+								continue
+							if distance < 8:
+								cont = str(residue1)+' '+str(residue2)
+								if cont not in contacts:
+									contacts.append(str(residue1)+' '+str(chain1)+' '+str(residue2)+' '+str(chain2))
 
-#	for i in contacts:
-#		print(i)
+	for i in contacts:
+		print(i)
 
 
 	return contacts
@@ -63,18 +88,15 @@ def filt_relsurf_acc(interf_contacts,id):
 	cont_filt = []
 	for lines in interf_contacts:
 		lines = lines.split(' ')
-		print(lines)
 
 		try:
 			chainA = list(lines[8])[3]
 			resA = lines[4].split('=')[1]
-#			print(resA,chainA)
 		except:	continue
 
 		try:
 			chainB = list(lines[17])[3]
 			resB = lines[13].split('=')[1]
-#			print(resB,chainB)
 		except:	continue
 
 		try:
@@ -205,24 +227,23 @@ def prediction(matrix1,matrix2,intercont,intracont):
 			scoringdict1[p] = df1[i][g]
 			scoringdict2[p] = df2[i][g]
 
+#	print(scoringdict2)
 
 	interscore = 0
 	intrascore = 0
 	for k,v in interdict.items():
 		for K,V in scoringdict1.items():
 			if k == K:
-				interscore += (v*V)
+				interscore += (v*V)/len(interdict)
 
 	for k1,v1 in intradict.items():
 		for K1,V1 in scoringdict2.items():
 			if k1 == K1:
-				intrascore += (v1*V1)
+				intrascore += (v1*V1)/len(intradict)
 
 
-	print(interscore)
-	print(intrascore)
-#	df2 = pd.DataFrame(matrix2)
-#	print(df2)
+#	print('interscore = ',interscore)
+#	print('intrascore = ',intrascore)
 
 
 
@@ -234,6 +255,7 @@ if __name__ == '__main__':
 	skempi_single = sys.argv[3]
 	skem = open(skempi_single)
 	id_list = []
+	mut_list = []
 
 
 	matrix1 = np.loadtxt(matrix1)
@@ -247,15 +269,18 @@ if __name__ == '__main__':
 
 	for lines in skem:
 		lines = lines.split(',')
+		mutation = mut_converter(lines)
+		mut_list.append(mutation)
 		pdb_id = lines[0]
 		ids = pdb_id.split('_')
 		id = ids[0]
 		if id not in id_list:
 			id_list.append(id)
 
+
 	for pdb_id in id_list:
 		intercontacts = interface(pdb_id)
-		filt_relacc_intercontacts = (filt_relsurf_acc(intercontacts,pdb_id))
+		filt_relacc_intercontacts = filt_relsurf_acc(intercontacts,pdb_id)
 		intracont = intracontacts(pdb_id)
 		prediction(matrix1,matrix2,filt_relacc_intercontacts,intracont)
-#		break
+		break

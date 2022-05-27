@@ -22,8 +22,8 @@ def interacting_dict(interacting_residue):
 						if 'F2F' not in lines:
 							tot_int_pairs += 1
 							lines = lines.rstrip().split(' ')
-							interacting_set.add(lines[1]+' '+lines[7])
-							interacting_res.append(lines[1]+' '+lines[7])
+							interacting_set.add(lines[1]+' '+lines[10])
+							interacting_res.append(lines[1]+' '+lines[10])
 
 	interacting_dict = {k:0 for k in interacting_set}
 
@@ -38,7 +38,7 @@ def interacting_dict(interacting_residue):
 								residues_dict[res] = 0
 
 
-
+#	print(interacting_res)
 	return interacting_dict,interacting_res,tot_int_pairs,residues_dict
 
 
@@ -91,7 +91,6 @@ def statistic_pot(contacts,cont_dict,res_dict,allresidues,tot_inter_pairs,matrix
 			if i == keys:
 				cont_dict[i] += 1
 
-
 	for lines in allresidues:
 		residue = lines.rstrip()
 		Tot_res += 1
@@ -99,6 +98,7 @@ def statistic_pot(contacts,cont_dict,res_dict,allresidues,tot_inter_pairs,matrix
 			if residue == k:
 				res_dict[k] +=1
 
+#	print(res_dict)
 
 	for k,v in res_dict.items():
 #		print(res_dict)
@@ -132,7 +132,7 @@ def statistic_pot(contacts,cont_dict,res_dict,allresidues,tot_inter_pairs,matrix
 #	pretty_matrix.to_csv('my_matrix_7A_relacc.csv',sep='\t')
 
 	matrix = np.array(matrix)
-#	pretty_matrix.to_csv('my_matrix_8A_rsa50.txt', sep='\t')
+	pretty_matrix.to_csv('matrix_intres_6A_allres.txt', sep='\t')
 
 	print(pretty_matrix)
 

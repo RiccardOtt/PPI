@@ -1,4 +1,5 @@
 import sys
+import os
 import numpy as np
 import pandas as pd
 import Bio.PDB
@@ -7,6 +8,40 @@ import warnings
 from Bio import BiopythonWarning
 warnings.simplefilter('ignore', BiopythonWarning)
 
+
+
+def mut_converter(skempi_line):
+	new_list = []
+	final_list = []
+	real_final_list = []
+	convertion = ''
+
+	d = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 'LYS': 'K',
+     'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 'ASN': 'N', 
+     'GLY': 'G', 'HIS': 'H', 'LEU': 'L', 'ARG': 'R', 'TRP': 'W', 
+     'ALA': 'A', 'VAL':'V', 'GLU': 'E', 'TYR': 'Y', 'MET': 'M'}
+
+	for k,v in d.items():
+		mutation = list(skempi_line[2])
+		if mutation[1] == v:
+			mutation[1] = k
+			new_list.append(mutation)
+
+	for i in new_list:
+		for k,v in d.items():
+			i = list(i)
+			if i[-1] == v:
+				i[-1] = k
+				final_list.append(i)
+
+	for a in final_list:
+#		print(a)
+		real_final_list.append(skempi_line[0]+' '+a[1]+' '+a[2]+' '+''.join(a[3:-1])+' '+a[-1])
+
+	for f in real_final_list:
+		convertion += f
+
+	return convertion
 
 
 
@@ -63,7 +98,7 @@ def filt_relsurf_acc(interf_contacts,id):
 	cont_filt = []
 	for lines in interf_contacts:
 		lines = lines.split(' ')
-		print(lines)
+#		print(lines)
 
 		try:
 			chainA = list(lines[8])[3]
@@ -147,18 +182,26 @@ def intracontacts(id):
 	model = structure[0]
 	for chain1 in model:
 		for chain2 in model:
-			for residue1 in chain1:
-				for residue2 in chain2:
+			if chain1 == chain2:
+				for residue1 in chain1:
+					tags1 = residue1.id
+					for residue2 in chain2:
+						tags2 = residue2.id
+						if tags1[0] != " " or tags2[0] != " ":
+				  	  ###	The residue is a heteroatom
+							pass
+						else:
+							try:
 				# compute distance between CA atoms
-					try:
-						distance = residue1['CA'] - residue2['CA']
-					except KeyError:
-       				## no CA atom, e.g. for H_NAG
-						continue
-					if distance < 6:
-						cont = str(residue1)+' '+str(residue2)
-						if cont not in intracontacts:
-							intracontacts.append(cont)
+								distance = residue1['CA'] - residue2['CA']
+      				## no CA atom, e.g. for H_NAG
+							except KeyError:
+								continue
+
+							if distance < 8:
+								cont = str(residue1)+' '+str(chain1)+' '+str(residue2)+' '+str(chain2)
+								if cont not in intracontacts:
+									intracontacts.append(cont)
 
 
 #	for i in intracontacts:
@@ -169,62 +212,132 @@ def intracontacts(id):
 
 
 
-def prediction(matrix1,matrix2,intercont,intracont):
+
+def prediction(matrix1,matrix2,intercont,intracont,mut):
 	amino = ['GLY','ALA','SER','CYS','VAL','THR','ILE','PRO','MET','ASP','ASN','LEU','LYS','GLU','GLN','ARG','HIS','PHE','TYR','TRP']
+	amino2 = ['ALA','ARG','ASN','ASP','CYS','GLN','GLU','GLY','HIS','ILE','LEU','LYS','MET','PHE','PRO','SER','THR','TRP','TYR','VAL']
+
+	wt_intracont = []
+	wt_intercont = []
+	mut_intracont = []
+	mut_intercont = []
+
 	scoringdict1 = {}
 	scoringdict2 = {}
-	intradict = {}
-	interdict = {}
 
+	wt_intradict = {}
+	wt_interdict = {}
+
+	mut_scoringdict1 = {}
+	mut_scoringdict2 = {}
+	mut_intradict = {}
+	mut_interdict = {}
 
 
 
 	for lines in intracont:
 		lines = lines.split(' ')
-		intrares = lines[1]+' '+lines[8]
-		if intrares not in intradict:
-			intradict[intrares] = 1
-		else:
-			intradict[intrares] += 1
+		intrares = lines[1]+' '+lines[4].split('=')[1]+' '+lines[8].split('=')[1].replace('>','')+' '+lines[10]
+		wt_intracont.append(intrares.split(' ')[0]+' '+intrares.split(' ')[3])
+		if mut.split(' ')[3] == intrares.split(' ')[1] and mut.split(' ')[1] == intrares.split(' ')[0]:
+			intrares = intrares.replace(intrares.split(' ')[0],mut.split(' ')[4])
+		mut_intracont.append(intrares.split(' ')[0]+' '+intrares.split(' ')[3])
 
 	for lines in intercont:
 		interres = (lines[1]+' '+lines[10])
-#		print(interres)
-		if interres not in interdict:
-			interdict[interres] = 1
+		interres = lines[1]+' '+lines[4].split('=')[1]+' '+lines[8].split('=')[1].replace('>','')+' '+lines[10]
+		wt_intercont.append(interres.split(' ')[0]+' '+interres.split(' ')[3])
+		if mut.split(' ')[3] == interres.split(' ')[1] and mut.split(' ')[1] == interres.split(' ')[0]:
+			interres = interres.replace(interres.split(' ')[0],mut.split(' ')[4])
+		mut_intercont.append(interres.split(' ')[0]+' '+interres.split(' ')[3])
+
+
+	for wt in wt_intracont:
+		if wt not in wt_intradict:
+			wt_intradict[wt] = 1
 		else:
-			interdict[interres] += 1
+			wt_intradict[wt] += 1
+	for mt in mut_intracont:
+		if mt not in mut_intradict:
+			mut_intradict[mt] = 1
+		else:
+			mut_intradict[mt] += 1
 
 
-	df1 = pd.DataFrame(matrix1,amino,amino)
+	for wt in wt_intercont:
+		if wt not in wt_interdict:
+			wt_interdict[wt] = 1
+		else:
+			wt_interdict[wt] += 1
+	for mt in mut_intercont:
+		if mt not in mut_interdict:
+			mut_interdict[mt] = 1
+		else:
+			mut_interdict[mt] += 1
+
+
+
+	df1 = pd.DataFrame(matrix1,amino2,amino2)
 	df2 = pd.DataFrame(matrix2,amino,amino)
 	l = []
+
 	for i in amino:
 		for g in amino:
 			p = i+' '+g
-			scoringdict1[p] = df1[i][g]
+#			scoringdict1[p] = df1[i][g]
 			scoringdict2[p] = df2[i][g]
 
+	for h in amino2:
+		for s in amino2:
+			P = h+' '+s
+			scoringdict1[P] = df1[h][s]
+#	print(scoringdict1)
 
-	interscore = 0
-	intrascore = 0
-	for k,v in interdict.items():
+	tot1 = 0
+	tot2 = 0
+	tot3 = 0
+	tot4 = 0
+	wt_intrascore = 0
+	wt_interscore = 0
+	mut_intrascore = 0
+	mut_interscore = 0
+
+	for k,v in wt_intradict.items():
+		tot1 += v
 		for K,V in scoringdict1.items():
 			if k == K:
-				interscore += (v*V)
+				wt_intrascore += (v*V) #/len(wt_intradict)
 
-	for k1,v1 in intradict.items():
+	for k1,v1 in wt_interdict.items():
+		tot2 += v
 		for K1,V1 in scoringdict2.items():
 			if k1 == K1:
-				intrascore += (v1*V1)
+				wt_interscore += (v1*V1) #/len(wt_interdict)
+
+	for k,v in mut_intradict.items():
+		tot3 += v
+		for K,V in scoringdict1.items():
+			if k == K:
+				mut_intrascore += (v*V) #/len(mut_intradict)
+
+	for k1,v1 in mut_interdict.items():
+		tot4 += v
+		for K1,V1 in scoringdict2.items():
+			if k1 == K1:
+				mut_interscore += (v1*V1) #/len(mut_interdict)
 
 
-	print(interscore)
-	print(intrascore)
-#	df2 = pd.DataFrame(matrix2)
-#	print(df2)
 
+#	print('wt_interscore = ',wt_intrascore)
+#	print('wt_intrascore = ',wt_interscore)
+#	print('mut_intrascore = ',mut_intrascore)
+#	print('mut_interscore = ',mut_interscore)
 
+#	print(wt_intrascore+wt_interscore)
+
+	DDG_pred = ((mut_intrascore)+(mut_interscore)) - ((wt_intrascore)+(wt_interscore))
+#	print(mut)
+	print(mut+'   '+'DDG_pred ='+' '+str(DDG_pred))
 
 
 
@@ -234,6 +347,7 @@ if __name__ == '__main__':
 	skempi_single = sys.argv[3]
 	skem = open(skempi_single)
 	id_list = []
+	mut_list = []
 
 
 	matrix1 = np.loadtxt(matrix1)
@@ -246,16 +360,25 @@ if __name__ == '__main__':
 
 
 	for lines in skem:
+#		if 'Pr/PI' not in lines or 'AB/AG' not in lines:
 		lines = lines.split(',')
+		mutation = mut_converter(lines)
+		mut_list.append(mutation)
 		pdb_id = lines[0]
 		ids = pdb_id.split('_')
 		id = ids[0]
 		if id not in id_list:
 			id_list.append(id)
 
-	for pdb_id in id_list:
+	for mut in mut_list:
+		pdb_id = mut.split('_')[0]
+		chain = mut.split(' ')[2]
+		wt_res = mut.split(' ')[1]
+		mut_position = mut.split(' ')[3]
+		mut_res = mut.split(' ')[4]
 		intercontacts = interface(pdb_id)
-		filt_relacc_intercontacts = (filt_relsurf_acc(intercontacts,pdb_id))
+		filt_relacc_intercontacts = filt_relsurf_acc(intercontacts,pdb_id)
 		intracont = intracontacts(pdb_id)
-		prediction(matrix1,matrix2,filt_relacc_intercontacts,intracont)
+		prediction(matrix1,matrix2,filt_relacc_intercontacts,intracont,mut)
 #		break
+

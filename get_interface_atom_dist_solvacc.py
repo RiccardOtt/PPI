@@ -44,7 +44,7 @@ def interface(id):
 							for atom1 in atoms1:
 								for atom2 in atoms2:
 									distance = atom1 - atom2
-									print(distance)
+#									print(distance)
 #							distance = residue1['CA'] - residue2['CA']
 #									except KeyError:
         	       				## no CA atom, e.g. for H_NAG
@@ -74,13 +74,11 @@ def filt_relsurf_acc(interf_contacts,id):
 		try:
 			chainA = list(lines[8])[3]
 			resA = lines[4].split('=')[1]
-#			print(resA,chainA)
 		except:	continue
 
 		try:
 			chainB = list(lines[17])[3]
 			resB = lines[13].split('=')[1]
-#			print(resB,chainB)
 		except:	continue
 
 		try:
@@ -90,7 +88,6 @@ def filt_relsurf_acc(interf_contacts,id):
 		except:	continue
 		else:
 			rel_acc = []
-
 			for i, line in enumerate(dssp_file_complex):
 				if i > 27:
 					line = line.rstrip()
@@ -129,9 +126,17 @@ def filt_relsurf_acc(interf_contacts,id):
 		try:
 
 			if abs(float(rel_acc[0]))-float(float(rel_acc[1])) < abs(float(rel_acc[2])-float(rel_acc[3])):
-				print(lines[0:7],lines[9:16])
+				cont_filt.append(lines[0:16])
 		except:
 			pass
+
+
+	for i in cont_filt:
+		print(i)
+
+
+
+
 
 
 
@@ -139,34 +144,22 @@ def filt_relsurf_acc(interf_contacts,id):
 
 
 if __name__ == '__main__':
-
-	skempi_singlmut = sys.argv[1]
-
-	set_id_chain = set()
-	set_id = set()
-	skempi_singl = open(skempi_singlmut)
-
-	for lines in skempi_singl:
-		lines = lines.split(',')
-		pdb_id = lines[0]
-		ids = pdb_id.split('_')
-		id = ids[0]
-#		chains = ids[1:]
-#		chain = ''.join(chains)
-#		chain_split = list(chain)
-#		for ch in chain_split:
-#			set_id_chain.add(id+'_'+ch)
-		set_id.add(id)
+	skempi_single = sys.argv[1]
+	skem = open(skempi_single)
+	id_list = []
 
 
-	for i in set_id:
-#	for i in set_id_chain:
-#		g = i.split('_')[0]
-#		try:
-#			dssp_file_complex = open('/home/riccardo/Documents/Bioinf/Documents/Tesi/dssp_single_mut/complex/'+g+'.dssp','r')
-#			dssp_file_singlchain = open('/home/riccardo/Documents/Bioinf/Documents/Tesi/dssp_single_mut/onlymut_chain/'+i+'.dssp','r')
-#		except: continue
-#		else:
-#		cont = interface(i)
-		contacts_filtered = filt_relsurf_acc(cont,i)
+	for lines in skem:
+		if 'Pr/PI' in lines or 'AB/AG' in lines:
+			lines = lines.split(',')
+			pdb_id = lines[0]
+			ids = pdb_id.split('_')
+			id = ids[0]
+			if id not in id_list:
+				id_list.append(id)
+
+
+	for pdb_id in id_list:
+		intercontacts = interface(pdb_id)
+		filt_relacc_intercontacts = filt_relsurf_acc(intercontacts,pdb_id)
 #		break

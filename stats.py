@@ -80,6 +80,7 @@ def take_values(db,ids):
 	R = float(0.001985)
 	db = open(db)
 	ids_singlemut_filt = []
+	mut = []
 	affinity_wt = []
 	affinity_mut = []
 	delta_G_wt = []
@@ -92,13 +93,18 @@ def take_values(db,ids):
 		if 'n' in lines[6] or 'n' in lines[8] or '>' in lines[6] or '>' in lines[8] or '<' in lines[6] or '<' in lines[8] or '~' in lines[6] or '~' in lines[8] or not lines[13]:
 			continue
 		else:
+#			print(lines)
 			db_singlmut.append(lines)
 			ids_singlemut_filt.append(lines[0])
+			mut.append(lines[2])
 			affinity_wt.append(float(lines[8]))
 			affinity_mut.append(float(lines[6]))
 			delta_G_wt.append(float(re.sub('[^0-9]','',lines[13]))*R*ln(float(lines[8])))
 			delta_G_mut.append(float(re.sub('[^0-9]','',lines[13]))*R*ln(float(lines[6])))
 			localization.append(lines[3])
+
+	for i in range(len(db_singlmut)):
+		print(ids_singlemut_filt[i]+' '+mut[i]+' '+str(delta_G_mut[i]-delta_G_wt[i]))
 
 	return affinity_wt,affinity_mut,delta_G_wt,delta_G_mut,set(ids_singlemut_filt),db_singlmut,localization
 
@@ -110,7 +116,6 @@ def stats(wt,mut,d_G_wt,d_G_mut,skem_singmut,local):
 
 	WT = []
 	MUT = []
-
 
 	Delta_Delta_G = []
 
@@ -145,7 +150,7 @@ def stats(wt,mut,d_G_wt,d_G_mut,skem_singmut,local):
 
 	for i in range(len(d_G_wt)):
 		Delta_Delta_G.append((d_G_mut[i] - d_G_wt[i]))
-
+#	print(Delta_Delta_G)
 
 #	for i in range(len(Delta_Delta_G)):
 #		print(local[i], Delta_Delta_G[i])
@@ -168,10 +173,10 @@ def stats(wt,mut,d_G_wt,d_G_mut,skem_singmut,local):
 
 	destab_mut = np.array(destab_mut).astype(np.float)
 	stab_mut = np.array(stab_mut).astype(np.float)
-	print('mean destabilizing mutatios =', np.mean(destab_mut))
-	print('mean stabilizing mutations =', np.mean(stab_mut))
-	print('std destabilizing mutatios =', np.std(destab_mut))
-	print('std stabilizing mutatios =', np.std(destab_mut))
+#	print('mean destabilizing mutatios =', np.mean(destab_mut))
+#	print('mean stabilizing mutations =', np.mean(stab_mut))
+#	print('std destabilizing mutatios =', np.std(destab_mut))
+#	print('std stabilizing mutatios =', np.std(destab_mut))
 
 
 	np.set_printoptions(suppress=True)
